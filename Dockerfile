@@ -2,21 +2,27 @@
 
 # Start from the latest golang base image
 FROM golang:latest
-ENV CGO_ENABLED=0
-ENV GOOS=linux
-ENV GOARCH=amd64
 
-RUN apk update && apk upgrade && \
-  apk add --no-cache ca-certificates git openssh-client
+# Add Maintainer Info
+LABEL maintainer="Rajeev Singh <rajeevhub@gmail.com>"
 
-RUN mkdir -p /test-api
-WORKDIR /test-api
+# Set the Current Working Directory inside the container
+WORKDIR /app
 
-ADD . /test-api
-RUN go build -mod vendor
+# Copy go mod and sum files
+COPY go.mod go.sum ./
 
-# Expose port 8080 to the outside world
+# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
+RUN go mod download
+
+# Copy the source from the current directory to the Working Directory inside the container
+COPY . .
+
+# Build the Go app
+RUN go build -o main .
+
+# Expose port 80 to the outside world
 EXPOSE 80
 
 # Command to run the executable
-CMD ["./test-api"]
+CMD ["./main"]
